@@ -1,0 +1,14 @@
+apiVersion: supplychains.tanzu.vmware.com/v1alpha1
+kind: PackageDeploy
+metadata:
+  name: deploy-tanzu-java-web-app
+spec:
+  source:
+    git:
+      url: "https://github.com/Mpluya/tap-azure-workload-config-repo.git"
+      branch: "main"
+  #! The path to the yaml to be applied to the cluster.
+  subPath:
+    #! The path to the yaml to be applied to the cluster
+    #! Required
+    path: "packages/tanzu-java-web-app.pve.vmware.com"
