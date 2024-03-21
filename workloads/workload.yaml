@@ -1,0 +1,30 @@
+apiVersion: supplychains.tanzu.vmware.com/v1alpha1
+kind: AppBuildV1
+metadata:
+  name: tanzu-java-web-app
+  namespace: supplychains
+spec:
+  gitOps:
+    branch: "main"
+    subPath: "packages"
+    url: "https://github.com/Mpluya/tap-azure-workload-config-repo.git"
+  registry:
+    repository: "tap-build/workloads"
+    server: "cxscssa.azurecr.io"
+  source:
+    git:
+      url: "https://github.com/x95castle1/friday-java-web-app.git"
+      branch: "main"
+  #! Kpack build specification
+  build:
+    builder:
+      kind: "clusterbuilder"
+      name: "default"
+    serviceAccountName: "default"
+  carvel:
+    packageDomain: "pve.vmware.com"
+    #! The name of the Carvel Package. Combines with spec.carvel.packageDomain to create the Package refName. If set to "", will use the workload name.
+    packageName: ""
+    serviceAccountName: "default"
+    #! Name of the values Secret that provides customized values to the package installation's templating steps.
+    valuesSecretName: "tanzu-java-web-app"
