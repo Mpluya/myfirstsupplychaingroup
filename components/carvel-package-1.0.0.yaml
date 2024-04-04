@@ -77,6 +77,8 @@ spec:
           type: oci-yaml-files
         - name: oci-ytt-files
           type: oci-ytt-files
+        - name: git
+          type: git
     outputs:
         - name: package
           type: package
@@ -108,6 +110,8 @@ spec:
               value: $(workload.spec.gitOps.subPath)
             - name: gitops-branch
               value: $(workload.spec.gitOps.branch)
+            - name: git-digest
+              value: $(inputs.git.digest)
         pipelineRef:
             name: carvel-package
         taskRunTemplate:

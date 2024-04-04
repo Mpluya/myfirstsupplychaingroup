@@ -48,6 +48,9 @@ spec:
           description: the base branch to clone.
           name: gitops-branch
           type: string
+        - description: git commit digest
+          name: git-digest
+          type: string
     results:
         - description: url of the resulting source object you can use in your chain
           name: url
@@ -117,6 +120,8 @@ spec:
               value: $(params.carvel-package-values-secret-name)
             - name: gitops-subpath
               value: $(params.gitops-subpath)
+            - name: git-digest
+              value: $(params.git-digest)
           runAfter:
             - fetch-config
             - fetch-ytt

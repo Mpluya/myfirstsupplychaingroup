@@ -37,6 +37,9 @@ spec:
           description: the sub-path into the git repository in which to write the configuration.
           name: gitops-subpath
           type: string
+        - description: The git commit digest from source-provider component.
+          name: git-digest
+          type: string
     results:
         - description: Carvel distributable packages that enables users to install on a different cluster.
           name: carvel-package
@@ -63,7 +66,7 @@ spec:
               value: /tekton/home/.docker/
             - name: HOME
               value: /tekton/home/
-          image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
+          image: us-central1-docker.pkg.dev/app-last-mile/ci/development/alm-catalog/carvel@sha256:f11a6d3301620acb66218f9e34a4a2676c7193c2c1f9b316e4db3c03d4829fe8
           name: build-imgpkg-bundle
           script: |-
             #!/bin/bash
@@ -133,198 +136,9 @@ spec:
               value: /tekton/home/.docker/
             - name: HOME
               value: /tekton/home/
-          image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
-          name: package-version
-          script: |-
-            #!/bin/bash
-
-            set -euo pipefail
-
-            cd `mktemp -d`
-
-            cp $(workspaces.content.path)/package.lock .
-            rm $(workspaces.content.path)/package.lock
-
-            imagename="$(awk -F"image: " '{if ($2) print $2;}' package.lock)"
-            echo "[DEBUG] imagename"
-            echo "$imagename"
-
-            git_commit=""
-            if [[ ! -z "$imagename" ]]; then
-              revision="$(krane config "$imagename" | jq -r '.config.Labels["org.opencontainers.image.revision"]')"
-              regex="^([a-zA-Z0-9\/_-]+)(\@sha1:)?([0-9a-f]{40})$"
-              if [[ "$revision" =~ $regex ]]; then
-                git_commit="${BASH_REMATCH[3]:0:7}"
-              fi
-            fi
-
-            current_date="$(date "+%Y%m%d%H%M%S.0.0")"
-
-            if [[ -z "${git_commit}" ]]; then
-              CARVEL_PACKAGE_VERSION="${current_date}"
-            else
-              CARVEL_PACKAGE_VERSION="${current_date}+build.${git_commit}"
-            fi
-
-            echo -n "$CARVEL_PACKAGE_VERSION" > $(results.carvel-package-version.path)
-        - computeResources: {}
-          env:
-            - name: DOCKER_CONFIG
-              value: /tekton/home/.docker/
-            - name: HOME
-              value: /tekton/home/
-          image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
+          image: us-central1-docker.pkg.dev/app-last-mile/ci/development/alm-catalog/carvel@sha256:f11a6d3301620acb66218f9e34a4a2676c7193c2c1f9b316e4db3c03d4829fe8
           name: build-carvel-package
-          script: |-
-            #!/bin/bash
-
-            set -euo pipefail
-
-            cd `mktemp -d`
-
-            # if params.carvel-package-name unset, use workload name
-            CARVEL_PACKAGE_SHORT_NAME="$(params.carvel-package-name)"
-            if [ -z "${CARVEL_PACKAGE_SHORT_NAME}" ]; then
-              CARVEL_PACKAGE_SHORT_NAME="$(params.workload-name)"
-            fi
-
-            # if params.carvel-package-domain unset, use default.tap
-            CARVEL_PACKAGE_DOMAIN="$(params.carvel-package-domain)"
-            if [ -z "${CARVEL_PACKAGE_DOMAIN}" ]; then
-              CARVEL_PACKAGE_DOMAIN="default.tap"
-            fi
-
-            CARVEL_PACKAGE_NAME="${CARVEL_PACKAGE_SHORT_NAME}.${CARVEL_PACKAGE_DOMAIN}"
-
-            echo "[DEBUG] CARVEL_PACKAGE_NAME"
-            echo "${CARVEL_PACKAGE_NAME}"
-
-            ##############################
-            #    build carvel package    #
-            ##############################
-
-            CARVEL_PACKAGE_VERSION="$(cat $(results.carvel-package-version.path))"
-            IMGPKG_BUNDLE="$(cat $(results.imgpkg-bundle.path))"
-            CARVEL_PACKAGE_FILENAME="package.yaml"
-
-            cat <<EOF > ./package-template.yaml
-            #@ load("@ytt:data", "data")
-            #@ load("@ytt:yaml", "yaml")
-
-            apiVersion: data.packaging.carvel.dev/v1alpha1
-            kind: Package
-            metadata:
-              name: ${CARVEL_PACKAGE_NAME}.${CARVEL_PACKAGE_VERSION}
-            spec:
-              refName: ${CARVEL_PACKAGE_NAME}
-              version: ${CARVEL_PACKAGE_VERSION}
-              releaseNotes: |
-                Release v${CARVEL_PACKAGE_VERSION} of package ${CARVEL_PACKAGE_NAME}
-              template:
-                spec:
-                  fetch:
-                  - imgpkgBundle:
-                      image: ${IMGPKG_BUNDLE}
-                  template:
-                  - ytt:
-                      paths:
-                      - "."
-                  - kbld:
-                      paths:
-                      - ".imgpkg/images.yml"
-                      - "-"
-                  deploy:
-                  - kapp: {}
-              #@ if "openapi" in data.values:
-              valuesSchema:
-                openAPIv3: #@ yaml.decode(data.values.openapi)["components"]["schemas"]["dataValues"]
-              #@ end
-            EOF
-
-            if [ -s $(workspaces.content.path)/schema-openapi.yml ]; then
-              ytt -f ./package-template.yaml --data-value openapi="$(cat $(workspaces.content.path)/schema-openapi.yml)" | tee "${CARVEL_PACKAGE_FILENAME}"
-            else
-              ytt -f ./package-template.yaml | tee "${CARVEL_PACKAGE_FILENAME}"
-            fi
-            rm -f $(workspaces.content.path)/schema-openapi.yml
-
-            #####################################
-            #         build values secret       #
-            #####################################
-
-            VALUES_SECRET_NAME="${CARVEL_PACKAGE_NAME}-values"
-            if [[ -n "$(params.carvel-package-values-secret-name)" ]]; then
-              VALUES_SECRET_NAME="$(params.carvel-package-values-secret-name)"
-            fi
-
-            CARVEL_SECRET_FILENAME="values.yaml"
-
-            cat <<EOF > ./${CARVEL_SECRET_FILENAME}
-            ---
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: ${VALUES_SECRET_NAME}
-            stringData:
-              values.yml: |
-                ---
-                # workload_name: example
-            EOF
-
-            #####################################
-            #    build carvel package install   #
-            #####################################
-
-            CARVEL_PKGI_FILENAME="packageinstall.yaml"
-
-            SA_NAME="default"
-            if [[ -n "$(params.carvel-package-service-account)" ]]; then
-              SA_NAME="$(params.carvel-package-service-account)"
-            fi
-
-            cat <<EOF > ./${CARVEL_PKGI_FILENAME}
-            apiVersion: packaging.carvel.dev/v1alpha1
-            kind: PackageInstall
-            metadata:
-              name: ${CARVEL_PACKAGE_NAME}-pkgi
-            spec:
-              packageRef:
-                refName: ${CARVEL_PACKAGE_NAME}
-                versionSelection:
-                  constraints: ${CARVEL_PACKAGE_VERSION}
-                  prereleases: {}
-              serviceAccountName: ${SA_NAME}
-              values:
-              - secretRef:
-                  name: ${VALUES_SECRET_NAME}
-            EOF
-
-            output_path="$(workspaces.content.path)/${CARVEL_PACKAGE_NAME}"
-            mkdir "${output_path}"
-            cp "${CARVEL_PACKAGE_FILENAME}" "${output_path}"
-            cp "${CARVEL_PKGI_FILENAME}" "${output_path}"
-
-            if ! test -f "$(workspaces.content.path)/gitops/$(params.gitops-subpath)/${CARVEL_PACKAGE_NAME}/${CARVEL_SECRET_FILENAME}"; then
-              echo "writing values file, no values file exists in GitOps repo"
-              cp "${CARVEL_SECRET_FILENAME}" "${output_path}"
-
-              echo "[DEBUG] ${output_path}/${CARVEL_SECRET_FILENAME}"
-              cat "${output_path}/${CARVEL_SECRET_FILENAME}"
-            else
-              echo "skipping values file writing, values file already exists in GitOps repo"
-            fi
-
-            rm -rf "$(workspaces.content.path)/gitops"
-
-            echo "[DEBUG] ${output_path}/${CARVEL_PACKAGE_FILENAME}"
-            cat "${output_path}/${CARVEL_PACKAGE_FILENAME}"
-
-            echo "[DEBUG] ${output_path}/${CARVEL_PKGI_FILENAME}"
-            cat "${output_path}/${CARVEL_PKGI_FILENAME}"
-
-            echo "[DEBUG] $(workspaces.content.path)"
-            ls -al "$(workspaces.content.path)"
-            ls -al "$(workspaces.content.path)/${CARVEL_PACKAGE_NAME}"
+          script: "#!/bin/bash\n\nset -euo pipefail\n\ncd `mktemp -d`\n\n# if params.carvel-package-name unset, use workload name\nCARVEL_PACKAGE_SHORT_NAME=\"$(params.carvel-package-name)\"\nif [ -z \"${CARVEL_PACKAGE_SHORT_NAME}\" ]; then\n  CARVEL_PACKAGE_SHORT_NAME=\"$(params.workload-name)\"\nfi\n\n# if params.carvel-package-domain unset, use default.tap\nCARVEL_PACKAGE_DOMAIN=\"$(params.carvel-package-domain)\"\nif [ -z \"${CARVEL_PACKAGE_DOMAIN}\" ]; then\n  CARVEL_PACKAGE_DOMAIN=\"default.tap\"\nfi\n\nCARVEL_PACKAGE_NAME=\"${CARVEL_PACKAGE_SHORT_NAME}.${CARVEL_PACKAGE_DOMAIN}\"\n\necho \"[DEBUG] CARVEL_PACKAGE_NAME\"\necho \"${CARVEL_PACKAGE_NAME}\"\n\n##############################\n#    build carvel package    #\n##############################\n\ncurrent_date=\"$(date \"+%Y%m%d%H%M%S.0.0\")\"\nCARVEL_PACKAGE_VERSION=\"${current_date}+build.$(params.git-digest)\"  \n\nIMGPKG_BUNDLE=\"$(cat $(results.imgpkg-bundle.path))\"\nCARVEL_PACKAGE_FILENAME=\"package.yaml\"\n\ncat <<EOF > ./package-template.yaml\n#@ load(\"@ytt:data\", \"data\")\n#@ load(\"@ytt:yaml\", \"yaml\")\n\napiVersion: data.packaging.carvel.dev/v1alpha1\nkind: Package\nmetadata:\n  name: ${CARVEL_PACKAGE_NAME}.${CARVEL_PACKAGE_VERSION}\nspec:\n  refName: ${CARVEL_PACKAGE_NAME}\n  version: ${CARVEL_PACKAGE_VERSION}\n  releaseNotes: |\n    Release v${CARVEL_PACKAGE_VERSION} of package ${CARVEL_PACKAGE_NAME}\n  template:\n    spec:\n      fetch:\n      - imgpkgBundle:\n          image: ${IMGPKG_BUNDLE}\n      template:\n      - ytt:\n          paths:\n          - \".\"\n      - kbld:\n          paths:\n          - \".imgpkg/images.yml\"\n          - \"-\"\n      deploy:\n      - kapp: {}\n  #@ if \"openapi\" in data.values:\n  valuesSchema:\n    openAPIv3: #@ yaml.decode(data.values.openapi)[\"components\"][\"schemas\"][\"dataValues\"]\n  #@ end\nEOF\n\nif [ -s $(workspaces.content.path)/schema-openapi.yml ]; then\n  ytt -f ./package-template.yaml --data-value openapi=\"$(cat $(workspaces.content.path)/schema-openapi.yml)\" | tee \"${CARVEL_PACKAGE_FILENAME}\"\nelse\n  ytt -f ./package-template.yaml | tee \"${CARVEL_PACKAGE_FILENAME}\"\nfi\nrm -f $(workspaces.content.path)/schema-openapi.yml\n\n#####################################\n#         build values secret       #\n#####################################\n\nVALUES_SECRET_NAME=\"${CARVEL_PACKAGE_NAME}-values\"\nif [[ -n \"$(params.carvel-package-values-secret-name)\" ]]; then\n  VALUES_SECRET_NAME=\"$(params.carvel-package-values-secret-name)\"\nfi\n\nCARVEL_SECRET_FILENAME=\"values.yaml\"\n\ncat <<EOF > ./${CARVEL_SECRET_FILENAME}\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ${VALUES_SECRET_NAME}\nstringData:\n  values.yml: |\n    ---\n    # workload_name: example\nEOF\n\n#####################################\n#    build carvel package install   #\n#####################################\n\nCARVEL_PKGI_FILENAME=\"packageinstall.yaml\"\n\nSA_NAME=\"default\"\nif [[ -n \"$(params.carvel-package-service-account)\" ]]; then\n  SA_NAME=\"$(params.carvel-package-service-account)\"\nfi\n\ncat <<EOF > ./${CARVEL_PKGI_FILENAME}\napiVersion: packaging.carvel.dev/v1alpha1\nkind: PackageInstall\nmetadata:\n  name: ${CARVEL_PACKAGE_NAME}-pkgi\nspec:\n  packageRef:\n    refName: ${CARVEL_PACKAGE_NAME}\n    versionSelection:\n      constraints: ${CARVEL_PACKAGE_VERSION}\n      prereleases: {}\n  serviceAccountName: ${SA_NAME}\n  values:\n  - secretRef:\n      name: ${VALUES_SECRET_NAME}\nEOF\n\noutput_path=\"$(workspaces.content.path)/${CARVEL_PACKAGE_NAME}\"\nmkdir \"${output_path}\"\ncp \"${CARVEL_PACKAGE_FILENAME}\" \"${output_path}\"\ncp \"${CARVEL_PKGI_FILENAME}\" \"${output_path}\"\n\nif ! test -f \"$(workspaces.content.path)/gitops/$(params.gitops-subpath)/${CARVEL_PACKAGE_NAME}/${CARVEL_SECRET_FILENAME}\"; then\n  echo \"writing values file, no values file exists in GitOps repo\"\n  cp \"${CARVEL_SECRET_FILENAME}\" \"${output_path}\"\n\n  echo \"[DEBUG] ${output_path}/${CARVEL_SECRET_FILENAME}\"\n  cat \"${output_path}/${CARVEL_SECRET_FILENAME}\"\nelse\n  echo \"skipping values file writing, values file already exists in GitOps repo\"\nfi\n\nrm -rf \"$(workspaces.content.path)/gitops\"\n\necho \"[DEBUG] ${output_path}/${CARVEL_PACKAGE_FILENAME}\"\ncat \"${output_path}/${CARVEL_PACKAGE_FILENAME}\"\n\necho \"[DEBUG] ${output_path}/${CARVEL_PKGI_FILENAME}\"\ncat \"${output_path}/${CARVEL_PKGI_FILENAME}\"\n\necho \"[DEBUG] $(workspaces.content.path)\"\nls -al \"$(workspaces.content.path)\"\nls -al \"$(workspaces.content.path)/${CARVEL_PACKAGE_NAME}\""
     workspaces:
         - description: The folder where we write the carvel package version and imgpkg bundle path
           name: content
