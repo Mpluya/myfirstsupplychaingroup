@@ -38,6 +38,8 @@ spec:
           name: oci-ytt-files
           type: oci-ytt-files
           url: $(pipeline.results.url-overlay)
+        - name: git
+          type: git
     pipelineRun:
         params:
             - name: config-url
