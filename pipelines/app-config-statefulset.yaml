@@ -106,11 +106,11 @@ spec:
 
                     cd `mktemp -d`
 
-                    create_template \
-                      -workload-name="$(params.workload-name)" \
-                      -conventions="${conv}" \
-                      -workload-labels="${workload_labels}" \
-                      -workload-annotations="${workload_annotations}"
+#                    create_template \
+#                      -workload-name="$(params.workload-name)" \
+#                      -conventions="${conv}" \
+#                      -workload-labels="${workload_labels}" \
+#                      -workload-annotations="${workload_annotations}"
                     
                     cat <<EOF > $(workspaces.content.path)/app-config.yaml
                     #@ load("@ytt:data", "data")
@@ -236,13 +236,6 @@ spec:
                                       #@ end
                     EOF                    
                     
-                    
-                    if [ $? -ne 0 ]; then
-                      echo "create template failed"
-                      tee error.txt
-                      exit 1
-                    fi
-
                     cat appconfig.yaml
                     rm $(workspaces.content.path)/app-config.yaml
                     cp appconfig.yaml $(workspaces.content.path)
