@@ -1,0 +1,260 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+    name: app-config-statefulset
+spec:
+    description: Generates configuration for a Web application from a Conventions PodIntent.
+    params:
+        - description: URL of the OCI image containing the Conventions PodIntent.
+          name: config-url
+          type: string
+        - description: Workload name.
+          name: workload-name
+          type: string
+        - description: Workload labels.
+          name: workload-labels
+          type: string
+        - description: Workload annotations.
+          name: workload-annotations
+          type: string
+    results:
+        - description: URL of the resulting OCI image containing raw YAML config files.
+          name: url
+          type: string
+          value: $(tasks.store.results.url)
+        - description: SHA of the resulting OCI image containing raw YAML config files.
+          name: digest
+          type: string
+          value: $(tasks.store.results.digest)
+        - description: URL of the resulting OCI image containing YTT files.
+          name: url-overlay
+          type: string
+          value: $(tasks.store-overlay.results.url)
+        - description: SHA of the resulting OCI image containing YTT files.
+          name: digest-overlay
+          type: string
+          value: $(tasks.store-overlay.results.digest)
+    tasks:
+        - name: fetch-conventions
+          params:
+            - name: url
+              value: $(params.config-url)
+          taskRef:
+            kind: Task
+            name: fetch-tgz-content-oci
+          workspaces:
+            - name: store
+              workspace: shared-data
+        - name: statefulset-template
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+            - name: workload-labels
+              value: $(params.workload-labels)
+            - name: workload-annotations
+              value: $(params.workload-annotations)
+          runAfter:
+            - fetch-conventions
+          taskSpec:
+            metadata: {}
+            params:
+                - name: workload-name
+                  type: string
+                - name: workload-labels
+                  type: string
+                - name: workload-annotations
+                  type: string
+            results:
+                - name: template
+                  type: string
+            spec: null
+            stepTemplate:
+                computeResources: {}
+                securityContext:
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                            - ALL
+                    runAsNonRoot: true
+                    runAsUser: 1001
+                    seccompProfile:
+                        type: RuntimeDefault
+            steps:
+                - computeResources: {}
+                  image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:f9bab51401c3da96b48819956f754f777cb0190e7c35ec07dddee37ea76dbd2a
+                  name: create-template
+                  script: |
+                    #!/bin/bash
+
+                    set -euo pipefail
+
+                    ls -al $(workspaces.content.path)
+
+                    conv=$(cat $(workspaces.content.path)/app-config.yaml)
+
+                    if [[ '$(params.workload-labels)' == \$\(* ]]; then
+                      workload_labels=""
+                    else
+                      workload_labels='$(params.workload-labels)'
+                    fi
+
+                    if [[ '$(params.workload-annotations)' == \$\(* ]]; then
+                      workload_annotations=""
+                    else
+                      workload_annotations='$(params.workload-annotations)'
+                    fi
+
+                    cd `mktemp -d`
+
+#                    create_template \
+#                      -workload-name="$(params.workload-name)" \
+#                      -conventions="${conv}" \
+#                      -workload-labels="${workload_labels}" \
+#                      -workload-annotations="${workload_annotations}"
+                    
+                    cat <<EOF > $(workspaces.content.path)/app-config.yaml
+                    #@ load("@ytt:data", "data")
+                    #@ load("@ytt:yaml", "yaml")
+                    #@ load("@ytt:struct", "struct")
+                    #@ load("@ytt:assert", "assert")
+                    #@ load("@ytt:overlay", "overlay")
+                    #@ def merge_labels(fixed_values):
+                    #@   labels = {}
+                    #@   if hasattr(data.values.workload.metadata, "labels"):
+                    #@     exclusions = (@= label_exclusions @)
+                    #@     for k,v in dict(data.values.workload.metadata.labels).items():
+                    #@       if k not in exclusions:
+                    #@         labels[k] = v
+                    #@       end
+                    #@     end
+                    #@   end
+                    #@   labels.update(fixed_values)
+                    #@   return labels
+                    #@ end
+                    #@ def intOrString(v):
+                    #@   return v if type(v) == "int" else int(v.strip()) if v.strip().isdigit() else v
+                    #@ end
+                    #@ def merge_ports(ports_spec, containers):
+                    #@   ports = {}
+                    #@   for c in containers:
+                    #@     for p in getattr(c, "ports", []):
+                    #@       ports[p.containerPort] = {"targetPort": p.containerPort, "port": p.containerPort, "name": getattr(p, "name", str(p.containerPort))}
+                    #@     end
+                    #@   end
+                    #@   for p in ports_spec:
+                    #@     targetPort = getattr(p, "containerPort", p.port)
+                    #@     type(targetPort) in ("string", "int") or fail("containerPort must be a string or int")
+                    #@     targetPort = intOrString(targetPort)
+                    #@
+                    #@     port = p.port
+                    #@     type(port) in ("string", "int") or fail("port must be a string or int")
+                    #@     port = int(port)
+                    #@     ports[p.port] = {"targetPort": targetPort, "port": port, "name": getattr(p, "name", str(p.port))}
+                    #@   end
+                    #@   return ports.values()
+                    #@ end
+                    #@ def param(key):
+                    #@   if not key in data.values.params:
+                    #@     return None
+                    #@   end
+                    #@   return data.values.params[key]
+                    #@ end
+                    #@ def overlayvolumes():
+                    #@overlay/match by=overlay.subset({"kind":"StatefulSet"}), expects="0+"
+                    ---
+                      spec:
+                        template:
+                          #@overlay/match missing_ok=True
+                          volumeClaimTemplates: #@ param("volumeclaimtemplate")
+                          spec:
+                            #@overlay/match missing_ok=True
+                            volumemounts: #@ param("volumemounts")
+                    #@ end
+                    #@ def delivery():
+                    ---
+                      apiVersion: apps/v1
+                      kind: StatefulSet
+                      metadata:
+                        name: #@ data.values.workload.metadata.name
+                        annotations:
+                          kapp.k14s.io/update-strategy: "fallback-on-replace"
+                          ootb.apps.tanzu.vmware.com/servicebinding-workload: "true"
+                          kapp.k14s.io/change-rule: "upsert after upserting servicebinding.io/ServiceBindings"
+                        labels: #@ merge_labels({ "app.kubernetes.io/component": "run", "carto.run/workload-name": data.values.workload.metadata.name })
+                      spec:
+                        serviceName: #@ data.values.workload.metadata.name
+                        replicas: #@ data.values.params.replicas
+                        selector:
+                          matchLabels: #@ data.values.config.metadata.labels
+                        template: #@ data.values.config
+                    ---
+                      apiVersion: v1
+                      kind: Service
+                      metadata:
+                        name: #@ data.values.workload.metadata.name
+                        labels: #@ merge_labels({ "app.kubernetes.io/component": "run", "carto.run/workload-name": data.values.workload.metadata.name })
+                      spec:
+                        selector: #@ data.values.config.metadata.labels
+                        ports:
+                          #@ hasattr(data.values.params, "ports") and len(data.values.params.ports) or assert.fail("one or more ports param must be provided.")
+                          #@ declared_ports = []
+                          #@ if "ports" in data.values.params:
+                          #@   declared_ports = data.values.params.ports
+                          #@ else:
+                          #@   declared_ports = struct.encode([{ "containerPort": 8080, "port": 8080, "name": "http"}])
+                          #@ end
+                          #@ for p in merge_ports(declared_ports, data.values.config.spec.containers):
+                          - #@ p
+                          #@ end
+                    ---
+                      apiVersion: networking.k8s.io/v1
+                      kind: Ingress
+                      metadata:
+                        name: #@ data.values.workload.metadata.name
+                        annotations:
+                          projectcontour.io/tls-cert-namespace: kube-system
+                          ingress.kubernetes.io/force-ssl-redirect: "true"
+                          kubernetes.io/ingress.class: contour
+                          kapp.k14s.io/change-rule: "upsert after upserting Services"
+                        labels: #@ merge_labels({ "app.kubernetes.io/component": "run", "carto.run/workload-name": data.values.workload.metadata.name })
+                      spec:
+                        tls:
+                          - secretName: wildcard-cert
+                            hosts:
+                              - #@ data.values.workload.metadata.name
+                        rules:
+                          - host: #@ data.values.workload.metadata.name
+                            http:
+                              paths:
+                                - pathType: Prefix
+                                  path: /
+                                  backend:
+                                    service:
+                                      name: #@ data.values.workload.metadata.name
+                                      port:
+                                        number: 8080
+                                      #@ end
+                    EOF                    
+                    
+                    cat appconfig.yaml
+                    rm $(workspaces.content.path)/app-config.yaml
+                    cp appconfig.yaml $(workspaces.content.path)
+          workspaces:
+            - name: content
+              workspace: shared-data
+        - name: store
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+          runAfter:
+            - web-template
+          taskRef:
+            kind: Task
+            name: store-content-oci
+          workspaces:
+            - name: input
+              workspace: shared-data
+    workspaces:
+        - description: |
+            Used to store the Conventions PodIntent and generated config files.
+          name: shared-data
