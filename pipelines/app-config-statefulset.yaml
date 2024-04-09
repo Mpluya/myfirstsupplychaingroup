@@ -26,14 +26,6 @@ spec:
           name: digest
           type: string
           value: $(tasks.store.results.digest)
-        - description: URL of the resulting OCI image containing YTT files.
-          name: url-overlay
-          type: string
-          value: $(tasks.store-overlay.results.url)
-        - description: SHA of the resulting OCI image containing YTT files.
-          name: digest-overlay
-          type: string
-          value: $(tasks.store-overlay.results.digest)
     tasks:
         - name: fetch-conventions
           params:
