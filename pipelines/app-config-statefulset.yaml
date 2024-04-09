@@ -106,12 +106,6 @@ spec:
 
                     cd `mktemp -d`
 
-#                    create_template \
-#                      -workload-name="$(params.workload-name)" \
-#                      -conventions="${conv}" \
-#                      -workload-labels="${workload_labels}" \
-#                      -workload-annotations="${workload_annotations}"
-                    
                     cat <<EOF > $(workspaces.content.path)/app-config.yaml
                     #@ load("@ytt:data", "data")
                     #@ load("@ytt:yaml", "yaml")
