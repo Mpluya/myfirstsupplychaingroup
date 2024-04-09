@@ -1,0 +1,141 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+    name: app-config-statefulset
+spec:
+    description: Generates configuration for a Web application from a Conventions PodIntent.
+    params:
+        - description: URL of the OCI image containing the Conventions PodIntent.
+          name: config-url
+          type: string
+        - description: Workload name.
+          name: workload-name
+          type: string
+        - description: Workload labels.
+          name: workload-labels
+          type: string
+        - description: Workload annotations.
+          name: workload-annotations
+          type: string
+    results:
+        - description: URL of the resulting OCI image containing raw YAML config files.
+          name: url
+          type: string
+          value: $(tasks.store.results.url)
+        - description: SHA of the resulting OCI image containing raw YAML config files.
+          name: digest
+          type: string
+          value: $(tasks.store.results.digest)
+        - description: URL of the resulting OCI image containing YTT files.
+          name: url-overlay
+          type: string
+          value: $(tasks.store-overlay.results.url)
+        - description: SHA of the resulting OCI image containing YTT files.
+          name: digest-overlay
+          type: string
+          value: $(tasks.store-overlay.results.digest)
+    tasks:
+        - name: fetch-conventions
+          params:
+            - name: url
+              value: $(params.config-url)
+          taskRef:
+            kind: Task
+            name: fetch-tgz-content-oci
+          workspaces:
+            - name: store
+              workspace: shared-data
+        - name: statefulset-template
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+            - name: workload-labels
+              value: $(params.workload-labels)
+            - name: workload-annotations
+              value: $(params.workload-annotations)
+          runAfter:
+            - fetch-conventions
+          taskSpec:
+            metadata: {}
+            params:
+                - name: workload-name
+                  type: string
+                - name: workload-labels
+                  type: string
+                - name: workload-annotations
+                  type: string
+            results:
+                - name: template
+                  type: string
+            spec: null
+            stepTemplate:
+                computeResources: {}
+                securityContext:
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                            - ALL
+                    runAsNonRoot: true
+                    runAsUser: 1001
+                    seccompProfile:
+                        type: RuntimeDefault
+            steps:
+                - computeResources: {}
+                  image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:f9bab51401c3da96b48819956f754f777cb0190e7c35ec07dddee37ea76dbd2a
+                  name: create-template
+                  script: |
+                    #!/bin/bash
+
+                    set -euo pipefail
+
+                    ls -al $(workspaces.content.path)
+
+                    conv=$(cat $(workspaces.content.path)/app-config.yaml)
+
+                    if [[ '$(params.workload-labels)' == \$\(* ]]; then
+                      workload_labels=""
+                    else
+                      workload_labels='$(params.workload-labels)'
+                    fi
+
+                    if [[ '$(params.workload-annotations)' == \$\(* ]]; then
+                      workload_annotations=""
+                    else
+                      workload_annotations='$(params.workload-annotations)'
+                    fi
+
+                    cd `mktemp -d`
+
+                    create_template \
+                      -workload-name="$(params.workload-name)" \
+                      -conventions="${conv}" \
+                      -workload-labels="${workload_labels}" \
+                      -workload-annotations="${workload_annotations}"
+                    if [ $? -ne 0 ]; then
+                      echo "create template failed"
+                      tee error.txt
+                      exit 1
+                    fi
+
+                    cat appconfig.yaml
+                    rm $(workspaces.content.path)/app-config.yaml
+                    cp appconfig.yaml $(workspaces.content.path)
+          workspaces:
+            - name: content
+              workspace: shared-data
+        - name: store
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+          runAfter:
+            - web-template
+          taskRef:
+            kind: Task
+            name: store-content-oci
+          workspaces:
+            - name: input
+              workspace: shared-data
+    workspaces:
+        - description: |
+            Used to store the Conventions PodIntent and generated config files.
+          name: shared-data
