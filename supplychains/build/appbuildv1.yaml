@@ -25,4 +25,3 @@ spec:
         - componentRef:
             name: carvel-package-1.0.0
           name: carvel-package
-        --=
