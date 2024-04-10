@@ -278,7 +278,7 @@ spec:
                   type: RuntimeDefault
             steps:
               - computeResources: {}
-                image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:f9bab51401c3da96b48819956f754f777cb0190e7c35ec07dddee37ea76dbd2a
+                image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
                 name: write-file
                 script: |
                   #!/bin/bash
