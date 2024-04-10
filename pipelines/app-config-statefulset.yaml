@@ -26,6 +26,14 @@ spec:
           name: digest
           type: string
           value: $(tasks.store.results.digest)
+        - description: URL of the resulting OCI image containing YTT files.
+          name: url-overlay
+          type: string
+          value: $(tasks.store-overlay.results.url)
+        - description: SHA of the resulting OCI image containing YTT files.
+          name: digest-overlay
+          type: string
+          value: $(tasks.store-overlay.results.digest)
     tasks:
         - name: fetch-conventions
           params:
@@ -240,6 +248,68 @@ spec:
           workspaces:
             - name: input
               workspace: shared-data
+        - name: add-overlays
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+          runAfter:
+            - store
+          taskSpec:
+            metadata: {}
+            params:
+              - name: workload-name
+                type: string
+            results:
+              - name: overlays
+                type: string
+              - name: values
+                type: string
+            spec: null
+            stepTemplate:
+              computeResources: {}
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                runAsNonRoot: true
+                runAsUser: 1001
+                seccompProfile:
+                  type: RuntimeDefault
+            steps:
+              - computeResources: {}
+                image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:f9bab51401c3da96b48819956f754f777cb0190e7c35ec07dddee37ea76dbd2a
+                name: write-file
+                script: |
+                  #!/bin/bash
+                  set -euo pipefail
+                  set -x
+                  
+                  cat <<EOF > $(workspaces.content.path)/statefulset-template-overlays.yaml
+   
+                  EOF
+                  
+                  cat <<EOF > $(workspaces.content.path)/statefulset-template-values.yaml
+ 
+                  EOF
+                  
+                  echo "$(workspaces.content.path)/statefulset-template-overlays.yaml" | tee $(results.overlays.path)
+                  echo "$(workspaces.content.path)/statefulset-template-values.yaml" | tee $(results.values.path)
+          workspaces:
+            - name: content
+              workspace: overlay-data
+        - name: store-overlay
+          params:
+            - name: workload-name
+              value: $(params.workload-name)
+          runAfter:
+            - add-overlays
+          taskRef:
+            kind: Task
+            name: store-content-oci
+          workspaces:
+            - name: input
+              workspace: overlay-data
     workspaces:
         - description: |
             Used to store the Conventions PodIntent and generated config files.
