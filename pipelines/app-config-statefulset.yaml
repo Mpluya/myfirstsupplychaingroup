@@ -107,40 +107,40 @@ spec:
                     cd `mktemp -d`
 
                     cat <<EOF > $(workspaces.content.path)/app-config.yaml
-                    ---
                     apiVersion: apps/v1
                     kind: StatefulSet
                     metadata:
-                      name: $(params.workload-name)
+                      name: ss-friday-java-web-app
                       annotations:
                         kapp.k14s.io/update-strategy: fallback-on-replace
                         ootb.apps.tanzu.vmware.com/servicebinding-workload: "true"
                         kapp.k14s.io/change-rule: upsert after upserting servicebinding.io/ServiceBindings
                       labels:
-                        app.kubernetes.io/part-of: $(params.workload-name)
+                        app.kubernetes.io/part-of: ss-friday-java-web-app
                         apps.tanzu.vmware.com/auto-configure-actuators: "true"
                         apps.tanzu.vmware.com/workload-type: statefulset
                         app.kubernetes.io/component: run
-                        carto.run/workload-name: $(params.workload-name)
+                        carto.run/workload-name: ss-friday-java-web-app
                     spec:
-                      serviceName: $(params.workload-name)
+                      serviceName: ss-friday-java-web-app
                       replicas: 1
                       selector:
                         matchLabels:
                           app.kubernetes.io/component: run
-                          app.kubernetes.io/part-of: $(params.workload-name)
+                          app.kubernetes.io/part-of: ss-friday-java-web-app
                           apps.tanzu.vmware.com/auto-configure-actuators: "true"
                           apps.tanzu.vmware.com/workload-type: statefulset
-                          carto.run/workload-name: $(params.workload-name)
+                          carto.run/workload-name: ss-friday-java-web-app
                           conventions.carto.run/framework: spring-boot
                           tanzu.app.live.view: "true"
                           tanzu.app.live.view.application.actuator.path: actuator
                           tanzu.app.live.view.application.actuator.port: "8081"
                           tanzu.app.live.view.application.flavours: spring-boot
-                          tanzu.app.live.view.application.name: $(params.workload-name)
+                          tanzu.app.live.view.application.name: ss-friday-java-web-app
                       template:
                         metadata:
                           annotations:
+                            apps.tanzu.vmware.com/correlationid: https://github.com/x95castle1/friday-java-web-app?sub_path=/
                             autoscaling.knative.dev/minScale: "1"
                             boot.spring.io/actuator: http://:8081/actuator
                             boot.spring.io/version: 2.7.12
@@ -159,16 +159,16 @@ spec:
                             replicas: "1"
                           labels:
                             app.kubernetes.io/component: run
-                            app.kubernetes.io/part-of: $(params.workload-name)
+                            app.kubernetes.io/part-of: ss-friday-java-web-app
                             apps.tanzu.vmware.com/auto-configure-actuators: "true"
                             apps.tanzu.vmware.com/workload-type: statefulset
-                            carto.run/workload-name: $(params.workload-name)
+                            carto.run/workload-name: ss-friday-java-web-app
                             conventions.carto.run/framework: spring-boot
                             tanzu.app.live.view: "true"
                             tanzu.app.live.view.application.actuator.path: actuator
                             tanzu.app.live.view.application.actuator.port: "8081"
                             tanzu.app.live.view.application.flavours: spring-boot
-                            tanzu.app.live.view.application.name: $(params.workload-name)
+                            tanzu.app.live.view.application.name: ss-friday-java-web-app
                         spec:
                           containers:
                             - env:
@@ -222,26 +222,26 @@ spec:
                     apiVersion: v1
                     kind: Service
                     metadata:
-                      name: $(params.workload-name)
+                      name: ss-friday-java-web-app
                       labels:
-                        app.kubernetes.io/part-of: $(params.workload-name)
+                        app.kubernetes.io/part-of: ss-friday-java-web-app
                         apps.tanzu.vmware.com/auto-configure-actuators: "true"
                         apps.tanzu.vmware.com/workload-type: statefulset
                         app.kubernetes.io/component: run
-                        carto.run/workload-name: $(params.workload-name)
+                        carto.run/workload-name: ss-friday-java-web-app
                     spec:
                       selector:
                         app.kubernetes.io/component: run
-                        app.kubernetes.io/part-of: $(params.workload-name)
+                        app.kubernetes.io/part-of: ss-friday-java-web-app
                         apps.tanzu.vmware.com/auto-configure-actuators: "true"
                         apps.tanzu.vmware.com/workload-type: statefulset
-                        carto.run/workload-name: $(params.workload-name)
+                        carto.run/workload-name: ss-friday-java-web-app
                         conventions.carto.run/framework: spring-boot
                         tanzu.app.live.view: "true"
                         tanzu.app.live.view.application.actuator.path: actuator
                         tanzu.app.live.view.application.actuator.port: "8081"
                         tanzu.app.live.view.application.flavours: spring-boot
-                        tanzu.app.live.view.application.name: $(params.workload-name)
+                        tanzu.app.live.view.application.name: ss-friday-java-web-app
                       ports:
                         - targetPort: 8080
                           port: 8080
@@ -250,32 +250,32 @@ spec:
                     apiVersion: networking.k8s.io/v1
                     kind: Ingress
                     metadata:
-                      name: $(params.workload-name)
+                      name: ss-friday-java-web-app
                       annotations:
                         projectcontour.io/tls-cert-namespace: kube-system
                         ingress.kubernetes.io/force-ssl-redirect: "true"
                         kubernetes.io/ingress.class: contour
                         kapp.k14s.io/change-rule: upsert after upserting Services
                       labels:
-                        app.kubernetes.io/part-of: $(params.workload-name)
+                        app.kubernetes.io/part-of: ss-friday-java-web-app
                         apps.tanzu.vmware.com/auto-configure-actuators: "true"
                         apps.tanzu.vmware.com/workload-type: statefulset
                         app.kubernetes.io/component: run
-                        carto.run/workload-name: $(params.workload-name)
+                        carto.run/workload-name: ss-friday-java-web-app
                     spec:
                       tls:
                         - secretName: wildcard-cert
                           hosts:
-                            - $(params.workload-name)
+                            - ss-friday-java-web-app
                       rules:
-                        - host: $(params.workload-name)
+                        - host: ss-friday-java-web-app
                           http:
                             paths:
                               - pathType: Prefix
                                 path: /
                                 backend:
                                   service:
-                                    name: $(params.workload-name) 
+                                    name: ss-friday-java-web-app
                                     port:
                                       number: 8080
                     EOF                    
