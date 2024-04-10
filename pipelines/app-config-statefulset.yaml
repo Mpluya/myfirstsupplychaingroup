@@ -314,3 +314,6 @@ spec:
         - description: |
             Used to store the Conventions PodIntent and generated config files.
           name: shared-data
+        - description: |
+            Used to store generated YTT files.
+          name: overlay-data
