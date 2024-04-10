@@ -87,7 +87,7 @@ spec:
                     #!/bin/bash
 
                     set -euo pipefail
-                    set -x
+                    set +x
                     ls -al $(workspaces.content.path)
 
                     conv=$(cat $(workspaces.content.path)/app-config.yaml)

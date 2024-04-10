@@ -104,7 +104,7 @@ spec:
 
             mkdir -p .imgpkg
             echo "*****DOODS*******"
-            cat ./app-config.yaml
+            cat ./app-config.yaml 
             echo "*****DOODS*******"
             
             kbld -f . --imgpkg-lock-output ".imgpkg/images.yml"
