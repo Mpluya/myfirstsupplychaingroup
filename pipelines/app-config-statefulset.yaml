@@ -275,7 +275,7 @@ spec:
                                 path: /
                                 backend:
                                   service:
-                                    name: $(params.workload-name)
+                                    name: $(params.workload-name) 
                                     port:
                                       number: 8080
                     EOF                    
