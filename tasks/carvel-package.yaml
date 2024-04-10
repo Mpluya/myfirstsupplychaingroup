@@ -96,6 +96,8 @@ spec:
               values_filename=web-template-values.yaml
             elif [ -f "worker-template-values.yaml" ]; then
               values_filename=worker-template-values.yaml
+            elif [ -f "statefulset-template-values.yaml" ]; then
+              values_filename=statefulset-template-values.yaml
             fi
 
             if [ ! -z "$values_filename" ]; then
