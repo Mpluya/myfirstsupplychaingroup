@@ -277,7 +277,6 @@ spec:
                                     name: ss-friday-java-web-app
                                     port:
                                       number: 8080
-
                     EOF                    
                     
                     cat appconfig.yaml
