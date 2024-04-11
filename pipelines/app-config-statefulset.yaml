@@ -342,6 +342,8 @@ spec:
                   cat <<EOF > $(workspaces.content.path)/statefulset-template-values.yaml
                   #@data/values-schema
                   ---
+                  #@schema/nullable
+                  tbd:
                   EOF
                   
                   echo "$(workspaces.content.path)/statefulset-template-overlays.yaml" | tee $(results.overlays.path)
