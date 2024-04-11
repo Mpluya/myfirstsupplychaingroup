@@ -342,7 +342,7 @@ spec:
                   cat <<EOF > $(workspaces.content.path)/statefulset-template-values.yaml
                   #@data/values-schema
                   ---
-                  #@schema/nullable
+                  #@schema/type any=True
                   tbd:
                   EOF
                   
