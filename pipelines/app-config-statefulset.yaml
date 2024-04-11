@@ -280,7 +280,6 @@ spec:
                                       number: 8080
                     EOF                    
                     
-                    cat appconfig.yaml
                     rm $(workspaces.content.path)/app-config.yaml
                     cp appconfig.yaml $(workspaces.content.path)
           workspaces:
@@ -340,10 +339,7 @@ spec:
                   EOF
                   
                   cat <<EOF > $(workspaces.content.path)/statefulset-template-values.yaml
-                  #@data/values-schema
                   ---
-                  #@schema/type any=True
-                  tbd:
                   EOF
                   
                   echo "$(workspaces.content.path)/statefulset-template-overlays.yaml" | tee $(results.overlays.path)
