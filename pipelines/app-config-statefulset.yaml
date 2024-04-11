@@ -106,7 +106,7 @@ spec:
 
                     cd `mktemp -d`
 
-                    cat <<EOF > $(workspaces.content.path)/app-config.yaml
+                    cat <<EOF > $(workspaces.content.path)/appconfig.yaml
                     ---
                     apiVersion: apps/v1
                     kind: StatefulSet
@@ -281,7 +281,7 @@ spec:
                     EOF
                     
                     rm $(workspaces.content.path)/app-config.yaml
-                    cp appconfig.yaml $(workspaces.content.path)
+                    cat $(workspaces.content.path)/appconfig.yaml
           workspaces:
             - name: content
               workspace: shared-data
