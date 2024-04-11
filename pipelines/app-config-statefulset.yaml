@@ -278,7 +278,7 @@ spec:
                                     name: $(params.workload-name) 
                                     port:
                                       number: 8080
-                    EOF                    
+                    EOF
                     
                     rm $(workspaces.content.path)/app-config.yaml
                     cp appconfig.yaml $(workspaces.content.path)
