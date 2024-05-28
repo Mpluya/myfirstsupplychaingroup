@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-    name: calculate-digest
+    name: calculate-digest-20240527
 spec:
     params:
         - description: The url of the image to calculate the digest from

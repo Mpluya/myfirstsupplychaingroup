@@ -1,0 +1,256 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+    name: trivy-image-scan-v2
+spec:
+    description: Scans your image for vulnerabilities using Trivy
+    params:
+        - description: Location of the application image
+          name: image-url
+          type: string
+        - description: The name of the workload
+          name: workload-name
+          type: string
+        - name: workload-namespace
+          type: string
+        - name: workload-uid
+          type: string
+        - name: registry-server
+          type: string
+        - name: registry-repository
+          type: string
+        - name: git-url
+          type: string
+        - default: default
+          name: image-scanning-service-account-scanner
+          type: string
+        - default: default
+          name: image-scanning-service-account-publisher
+          type: string
+        - default: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:fff6c040c1ea96ccaf9c64410ef3cd787030e087e446ff1bd8008a5bd8b78d51
+          name: image-scanning-cli
+          type: string
+        - name: image-scanning-active-keychains
+          type: string
+        - name: image-scanning-steps-env-vars
+          type: string
+        - name: image-scanning-workspace
+          type: string
+    results:
+        - description: URL of the scanned image
+          name: scanned-image
+          type: string
+          value: $(tasks.scan.results.scanned-image)
+        - description: URL of the bundle containing the scan results
+          name: scan-results
+          type: string
+          value: $(tasks.scan.results.scan-results)
+    tasks:
+        - name: prepare
+          params:
+            - name: workspace
+              value: $(params.image-scanning-workspace)
+            - name: active-keychains
+              value: $(params.image-scanning-active-keychains)
+            - name: env-vars
+              value: $(params.image-scanning-steps-env-vars)
+          taskSpec:
+            metadata: {}
+            params:
+                - name: workspace
+                  type: string
+                - name: active-keychains
+                  type: string
+                - name: env-vars
+                  type: string
+            results:
+                - description: Parsed workspace.bindings parameter
+                  name: workspace-bindings
+                  type: string
+                - description: Parsed workspace.size parameter
+                  name: workspace-size
+                  type: string
+                - description: Parsed active-keychains parameter
+                  name: active-keychains
+                  type: string
+                - description: Parse step env-vars parameter
+                  name: env-vars
+                  type: string
+            spec: null
+            stepTemplate:
+                computeResources: {}
+                securityContext:
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop:
+                            - ALL
+                    runAsNonRoot: true
+                    runAsUser: 65534
+                    seccompProfile:
+                        type: RuntimeDefault
+            steps:
+                - computeResources: {}
+                  image: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:c6864aff908886044f4bdf41ecf5a06c59051e5effe2de1ae5413fecb87ec5cd
+                  name: prepare-workspace
+                  script: |
+                    #!/bin/bash
+
+                    set -euo pipefail
+
+                    cd `mktemp -d`
+
+                    # if workspace.size is not defined, set default workspace.size to 4Gi
+                    workspaceSize=`echo '$(params.workspace)' | yq '.size // "4Gi"'`
+                    echo $workspaceSize > $(results.workspace-size.path)
+                    echo '$(params.workspace)' | yq .bindings > $(results.workspace-bindings.path)
+                - computeResources: {}
+                  image: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:c6864aff908886044f4bdf41ecf5a06c59051e5effe2de1ae5413fecb87ec5cd
+                  name: prepare-active-keychains
+                  script: |
+                    #!/bin/bash
+
+                    set -euo pipefail
+
+                    cd `mktemp -d`
+
+                    echo '$(params.active-keychains)' | yq > $(results.active-keychains.path)
+                - computeResources: {}
+                  image: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:c6864aff908886044f4bdf41ecf5a06c59051e5effe2de1ae5413fecb87ec5cd
+                  name: prepare-env-vars
+                  script: |
+                    #!/bin/bash
+
+                    set -euo pipefail
+
+                    cd `mktemp -d`
+
+                    echo '$(params.env-vars)' | yq > $(results.env-vars.path)
+        - name: scan
+          params:
+            - name: image-url
+              value: $(params.image-url)
+            - name: workload-name
+              value: $(params.workload-name)
+            - name: image-scanning-service-account-scanner
+              value: $(params.image-scanning-service-account-scanner)
+            - name: image-scanning-service-account-publisher
+              value: $(params.image-scanning-service-account-publisher)
+            - name: image-scanning-cli-image
+              value: $(params.image-scanning-cli)
+            - name: image-scanning-active-keychains
+              value: $(tasks.prepare.results.active-keychains)
+            - name: image-scanning-steps-env-vars
+              value: $(tasks.prepare.results.env-vars)
+            - name: image-scanning-workspace-size
+              value: $(tasks.prepare.results.workspace-size)
+            - name: image-scanning-workspace-bindings
+              value: $(tasks.prepare.results.workspace-bindings)
+            - name: location
+              value: $(params.registry-server)/$(params.registry-repository)/$(params.workload-name)-$(params.workload-namespace)-scan-results:$(params.workload-uid)
+            - name: correlation-id
+              value: $(params.git-url)
+          runAfter:
+            - prepare
+          taskSpec:
+            apiVersion: managed-resource-controller.apps.tanzu.vmware.com/v1alpha1
+            kind: ManagedResource
+            metadata: {}
+            params:
+                - name: image-url
+                  type: string
+                - name: workload-name
+                  type: string
+                - name: image-scanning-workspace-size
+                  type: string
+                - name: image-scanning-service-account-scanner
+                  type: string
+                - name: image-scanning-service-account-publisher
+                  type: string
+                - name: image-scanning-cli
+                  properties:
+                    image:
+                        type: string
+                  type: object
+                - name: image-scanning-active-keychains
+                  type: array
+                - name: image-scanning-workspace-bindings
+                  type: array
+                - name: image-scanning-steps-env-vars
+                  type: array
+            results:
+                - name: scanned-image
+                  type: string
+                - name: scan-results
+                  type: string
+            spec:
+                healthRule:
+                    multiMatch:
+                        healthy:
+                            matchConditions:
+                                - status: "True"
+                                  type: ScanCompleted
+                                - status: "True"
+                                  type: Succeeded
+                        unhealthy:
+                            matchConditions:
+                                - status: "False"
+                                  type: ScanCompleted
+                                - status: "False"
+                                  type: Succeeded
+                resourceSpec:
+                    apiVersion: app-scanning.apps.tanzu.vmware.com/v1alpha1
+                    kind: ImageVulnerabilityScan
+                    metadata:
+                        annotations:
+                            app-scanning.apps.tanzu.vmware.com/scanner-name: Trivy
+                            apps.tanzu.vmware.com/correlationid: $(params.correlation-id)
+                        generateName: $(params.workload-name)-
+                        labels:
+                            app.kubernetes.io/component: image-scan
+                    params:
+                        - name: image-url
+                        - name: workload-name
+                        - name: image-scanning-workspace-size
+                        - name: image-scanning-service-account-scanner
+                        - name: image-scanning-service-account-publisher
+                        - name: image-scanning-cli
+                          properties:
+                            image:
+                                type: string
+                          type: object
+                        - name: image-scanning-active-keychains
+                          type: array
+                        - name: image-scanning-workspace-bindings
+                          type: array
+                        - name: image-scanning-steps-env-vars
+                          type: array
+                        - name: location
+                        - name: correlation-id
+                    spec:
+                        activeKeychains: $(params.image-scanning-active-keychains)
+                        image: $(params.image-url)
+                        scanResults:
+                            location: $(params.location)
+                        serviceAccountNames:
+                            publisher: $(params.image-scanning-service-account-publisher)
+                            scanner: $(params.image-scanning-service-account-scanner)
+                        steps:
+                            - args:
+                                - image
+                                - $(params.image-url)
+                                - --exit-code=0
+                                - --no-progress
+                                - --scanners=vuln
+                                - --format=cyclonedx
+                                - --output=$(params.scan-results-path)/scan.cdx.json
+                              env: $(params.image-scanning-steps-env-vars)
+                              image: $(params.image-scanning-cli-image)
+                              name: trivy-generate-report
+                        workspace:
+                            bindings: $(params.image-scanning-workspace-bindings)
+                            size: $(params.image-scanning-workspace-size)
+                resultMappings:
+                    - name: scanned-image
+                      path: status.scannedImage
+                    - name: scan-results
+                      path: status.scanResult
