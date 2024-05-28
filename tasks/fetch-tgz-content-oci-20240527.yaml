@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-    name: fetch-tgz-content-oci
+    name: fetch-tgz-content-oci-20240527
 spec:
     params:
         - description: location of the input
