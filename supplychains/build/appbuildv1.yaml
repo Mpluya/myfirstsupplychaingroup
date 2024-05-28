@@ -11,13 +11,13 @@ spec:
     description: Supply chain that pulls the source code from Git repository, builds it using buildpacks and packages the output as Carvel package.
     stages:
         - componentRef:
-            name: source-git-provider-1.0.0
+            name: source-git-provider-1.0.0-20240527
           name: source-git-provider
         - componentRef:
             name: buildpack-build-1.0.0
           name: buildpack-build
         - componentRef:
-            name: conventions-1.0.0
+            name: conventions-1.0.0-20240527
           name: conventions
         - componentRef:
             name: app-config-web-1.0.0
