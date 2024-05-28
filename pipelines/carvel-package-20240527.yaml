@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-    name: carvel-package
+    name: carvel-package-20240527
 spec:
     description: Package your project into a carvel package
     params:
