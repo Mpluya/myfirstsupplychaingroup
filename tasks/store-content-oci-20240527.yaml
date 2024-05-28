@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-    name: store-content-oci
+    name: store-content-oci-20240527
 spec:
     params:
         - name: workload-name
