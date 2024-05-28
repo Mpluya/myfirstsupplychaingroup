@@ -1,7 +1,7 @@
 apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
 kind: Component
 metadata:
-    name: carvel-package-1.0.0
+    name: carvel-package-1.0.0-20240527
 spec:
     config:
         - path: spec.registry
@@ -77,6 +77,8 @@ spec:
           type: oci-yaml-files
         - name: oci-ytt-files
           type: oci-ytt-files
+        - name: git
+          type: git
     outputs:
         - name: package
           type: package
@@ -108,6 +110,8 @@ spec:
               value: $(workload.spec.gitOps.subPath)
             - name: gitops-branch
               value: $(workload.spec.gitOps.branch)
+            - name: git-digest
+              value: $(inputs.git.digest)
         pipelineRef:
             name: carvel-package
         taskRunTemplate:
