@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-    name: conventions
+    name: conventions-20240527
 spec:
     description: Generates the Pod Conventions for a built image
     params:
