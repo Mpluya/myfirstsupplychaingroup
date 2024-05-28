@@ -1,7 +1,7 @@
 apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
 kind: Component
 metadata:
-    name: conventions-1.0.0
+    name: conventions-1.0.0-20240527
 spec:
     config:
         - path: spec.env
