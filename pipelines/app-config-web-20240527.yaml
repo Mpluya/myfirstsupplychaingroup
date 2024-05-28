@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-    name: app-config-web
+    name: app-config-web-20240527
 spec:
     description: Generates configuration for a Web application from a Conventions PodIntent.
     params:
