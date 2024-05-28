@@ -1,7 +1,7 @@
 apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
 kind: Component
 metadata:
-    name: source-git-provider-1.0.0
+    name: source-git-provider-1.0.0-20240527
 spec:
     config:
         - path: spec.source
