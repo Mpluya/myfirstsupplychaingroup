@@ -1,7 +1,7 @@
 apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
 kind: SupplyChain
 metadata:
-    name: appbuildv1
+    name: appbuiappbuildv1ldv1
 spec:
     defines:
         group: supplychains.tanzu.vmware.com
