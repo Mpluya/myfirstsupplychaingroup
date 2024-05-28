@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-    name: source-git-provider
+    name: source-git-provider-20240527
 spec:
     description: This pipeline stores the head of the git repository into an oci store.
     params:
