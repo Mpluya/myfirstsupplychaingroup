@@ -1,0 +1,44 @@
+apiVersion: supplychains.tanzu.vmware.com/v1alpha1
+kind: appbuildv2
+metadata:
+  name: tanzu-java-web-app
+  namespace: supplychains
+spec:
+  gitOps:
+    branch: "main"
+    subPath: "packages"
+    url: "https://github.com/Mpluya/tap-azure-workload-config-repo.git"
+  registry:
+    repository: "tap-build/workloads"
+    server: "cxscssa.azurecr.io"
+  #! These are SCST - Scan 2.0 configuration properties for an ImageVulnerabilityScan running in a Trivy Supply Chain component.
+  #! By default, no scanning configurations are needed to run a Trivy Supply Chain.
+  #! If a user wants to configure:
+  #! * activeKeyChains
+  #! * serviceAccountNames.scanner
+  #! * serviceAccountNames.publisher
+  #! * workspace.bindings
+  #! * workspace.size (default size is 4Gi because trivy scanning certain projects may require more space)
+  #! the user can configure the properties below and reference the [SCST - Scan 2.0 docs](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.8/tap/scst-scan-ivs-create-your-own.html)
+  #! for more details on these parameters.
+  scanning:
+    #! It must have write access to the scanResults.location which is SERVER/REPOSITORY where SERVER is from spec.registry.server and REPOSITORY is from spec.registry.repository. The `imagePullSecrets` of this service account must be able to pull the TAP images. The secret in the secrets of the service account must have write access to upload the scan results. Reference [SCST - Scan 2.0 docs](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.8/tap/scst-scan-install-app-scanning.html#configure-service-accounts-and-registry-credentials-3) for service account setup.
+    service-account-publisher: "default"
+    #! It must have read access to image. The `imagePullSecrets` of this service account must be able to pull the TAP images. The secret in the secrets of the service account must have read access to pull the image to scan. Reference [SCST - Scan 2.0 docs](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.8/tap/scst-scan-install-app-scanning.html#configure-service-accounts-and-registry-credentials-3) for service account setup.
+    service-account-scanner: "default"
+  source:
+    git:
+      url: "https://github.com/x95castle1/friday-java-web-app.git"
+      branch: "main"
+  build:
+    builder:
+      kind: "clusterbuilder"
+      name: "default"
+    serviceAccountName: "default"
+  carvel:
+    packageDomain: "pve.vmware.com"
+    #! The name of the Carvel Package. Combines with spec.carvel.packageDomain to create the Package refName. If set to "", will use the workload name.
+    packageName: ""
+    serviceAccountName: "default"
+    #! Name of the values Secret that provides customized values to the package installation's templating steps.
+    valuesSecretName: "tanzu-java-web-app"
