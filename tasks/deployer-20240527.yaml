@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-    name: deployer
+    name: deployer-20240527
 spec:
     description: Deploys K8s resources to the cluster.
     params:
