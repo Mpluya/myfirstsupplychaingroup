@@ -3,7 +3,7 @@ kind: Pipeline
 metadata:
     name: app-config-statefulset
 spec:
-    description: Generates configuration for a Web application from a Conventions PodIntent.
+    description: Generates configuration for a statefulset application from a Conventions PodIntent.
     params:
         - description: URL of the OCI image containing the Conventions PodIntent.
           name: config-url
@@ -81,7 +81,7 @@ spec:
                         type: RuntimeDefault
             steps:
                 - computeResources: {}
-                  image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
+                  image: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:1d73533cf670d61b4a96d71e06dd19f110a360bce9bf90f51d9e0b5351fa302a
                   name: create-template
                   script: |
                     #!/bin/bash
@@ -327,7 +327,7 @@ spec:
                   type: RuntimeDefault
             steps:
               - computeResources: {}
-                image: cxscssa.azurecr.io/tap-1-8-0/tap-packages@sha256:a3f31f02bc929c3743ab38401c6593db6ba7c0e5762b488d09bd6f0c6a22798b
+                image: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:1d73533cf670d61b4a96d71e06dd19f110a360bce9bf90f51d9e0b5351fa302a
                 name: write-file
                 script: |
                   #!/bin/bash
