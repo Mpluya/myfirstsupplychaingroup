@@ -24,8 +24,7 @@ spec:
                 - repository
             type: object
     description: |
-        Generates configuration for a Web application from a Conventions PodIntent.
-        Web applications contain a Knative Service.
+        Generates configuration for a stateful application from a Conventions PodIntent.
     inputs:
         - name: conventions
           type: conventions
