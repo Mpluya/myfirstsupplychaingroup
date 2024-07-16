@@ -27,8 +27,8 @@ spec:
     inputs:
         - name: conventions
           type: conventions
-        - name: git
-          type: git
+#        - name: git
+#          type: git
     outputs:
         - digest: $(pipeline.results.digest)
           name: oci-yaml-files
@@ -48,10 +48,10 @@ spec:
               value: $(workload.metadata.labels)
             - name: workload-annotations
               value: $(workload.metadata.annotations)
-            - name: git-digest
-              value: $(inputs.git.digest)
+#            - name: git-digest
+#              value: $(inputs.git.digest)
         pipelineRef:
-            name: app-config-web-with-git-sha
+            name: app-config-web
         taskRunTemplate:
             podTemplate:
                 securityContext:
