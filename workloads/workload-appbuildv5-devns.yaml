@@ -1,4 +1,4 @@
-apiVersion: supplychains.tanzu.vmware.com/v1alpha1.
+apiVersion: supplychains.tanzu.vmware.com/v1alpha1
 kind: appbuildv5
 metadata:
   name: tanzu-java-web-app

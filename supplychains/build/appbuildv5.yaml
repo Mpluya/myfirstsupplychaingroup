@@ -44,11 +44,11 @@ spec:
         - path: spec.build.builder.name
           value: default
         # whether to use a cache image
-        - path: spec.build.cache.enabled
-          value: false
+#        - path: spec.build.cache.enabled
+#          value: false
         # cache image to use
-        - path: spec.build.cache.image
-          value: ""
+#        - path: spec.build.cache.image
+#          value: ""
         # Service account to use
         - path: spec.build.serviceAccountName
           value: default
