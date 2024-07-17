@@ -217,7 +217,7 @@ spec:
             - name: image-scanning-service-account-publisher
               value: $(workload.spec.scanning.service-account-publisher)
             - name: image-scanning-cli
-              value: cxscssa.azurecr.io/tap-1-10-0/tap-packages@sha256:fff6c040c1ea96ccaf9c64410ef3cd787030e087e446ff1bd8008a5bd8b78d51
+              value: cxscssa.azurecr.io/tap-1-11-0/tap-packages@sha256:1bb190c6a8bab459e70daed093bb504ff0433da696f2dbf968e81d5e4fc06ebc
             - name: image-scanning-active-keychains
               value: $(workload.spec.scanning.active-keychains)
             - name: image-scanning-steps-env-vars

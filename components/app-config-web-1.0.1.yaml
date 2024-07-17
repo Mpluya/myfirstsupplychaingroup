@@ -2,8 +2,6 @@ apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
 kind: Component
 metadata:
     name: app-config-web-1.0.1
-    labels:
-      supply-chain.apps.tanzu.vmware.com/catalog: tanzu
 spec:
     config:
         - path: spec.registry
@@ -25,7 +23,7 @@ spec:
             type: object
     description: |
         Generates configuration for a Web application from a Conventions PodIntent.
-        Web applications contain a Knative Service.
+        Web applications contain a Knative Service with an overlay to include the git commit sha of the originating source code change.
     inputs:
         - name: conventions
           type: conventions
