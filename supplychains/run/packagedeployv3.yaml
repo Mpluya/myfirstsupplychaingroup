@@ -1,0 +1,21 @@
+apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
+kind: SupplyChain
+metadata:
+    name: packagedeployv3
+spec:
+    defines:
+        group: supplychains.tanzu.vmware.com
+        kind: packagedeployv3
+        plural: packagedeployv3s
+        version: v1alpha1
+    description: Deploy a Carvel package from Git with defaults and overrides
+    stages:
+        - componentRef:
+            name: source-git-provider-1.0.0
+          name: source-git-provider
+        - componentRef:
+            name: source-package-translator-1.0.0
+          name: source-package-translator
+        - componentRef:
+            name: deployer-1.0.0
+          name: deployer
