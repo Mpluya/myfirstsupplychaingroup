@@ -19,3 +19,5 @@ spec:
         - componentRef:
             name: deployer-1.0.0
           name: deployer
+          securityContext:
+            runAs: workload
