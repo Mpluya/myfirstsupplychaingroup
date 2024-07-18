@@ -1,0 +1,61 @@
+apiVersion: supply-chain.apps.tanzu.vmware.com/v1alpha1
+kind: SupplyChain
+metadata:
+    name: packagedeployv4
+spec:
+    defines:
+        group: supplychains.tanzu.vmware.com
+        kind: packagedeployv4
+        plural: packagedeployv4s
+        version: v1alpha1
+    description: Deploy a Carvel package from Git with defaults and overrides
+    stages:
+        - componentRef:
+            name: source-git-provider-1.0.0
+          name: source-git-provider
+        - componentRef:
+            name: source-package-translator-1.0.0
+          name: source-package-translator
+        - componentRef:
+            name: deployer-1.0.0
+          name: deployer
+
+    config:
+    #   overrides:
+    #       # A git branch ref to watch for new source
+    #       - path: spec.source.git.branch
+    #         value: ""
+    #       # A git commit sha to use
+    #       - path: spec.source.git.commit
+    #         value: ""
+    #       # A git tag ref to watch for new source
+    #       - path: spec.source.git.tag
+    #         value: ""
+    #       # The url to the git source repository
+    #       - path: spec.source.git.url
+    #         value: ""
+    #       # The sub path in the bundle to locate source code
+    #       - path: spec.source.subPath
+    #         value: ""
+    #       # The path to the yaml to be applied to the cluster
+    #       - path: spec.subPath.path
+    #         value: ""
+    #   defaults:
+    #       # A git branch ref to watch for new source
+    #       - path: spec.source.git.branch
+    #         value: ""
+    #       # A git commit sha to use
+    #       - path: spec.source.git.commit
+    #         value: ""
+    #       # A git tag ref to watch for new source
+    #       - path: spec.source.git.tag
+    #         value: ""
+    #       # The url to the git source repository
+    #       - path: spec.source.git.url
+    #         value: ""
+    #       # The sub path in the bundle to locate source code
+    #       - path: spec.source.subPath
+    #         value: ""
+    #       # The path to the yaml to be applied to the cluster
+    #       - path: spec.subPath.path
+    #         value: ""
