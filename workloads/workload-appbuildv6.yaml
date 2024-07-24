@@ -18,6 +18,9 @@ spec:
       kind: "clusterbuilder"
       name: "default"
     serviceAccountName: "default"
+    env:
+      - name: BP_JVM_VERSION
+        value: "17"
   carvel:
     packageDomain: "pve.vmware.com"
     #! The name of the Carvel Package. Combines with spec.carvel.packageDomain to create the Package refName. If set to "", will use the workload name.
